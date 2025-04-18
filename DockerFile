@@ -1,0 +1,35 @@
+# Temel imaj olarak PHP 8.2 kullanıyoruz
+FROM php:8.2-fpm
+
+# Sistem bağımlılıklarını kuruyoruz
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    libpq-dev \
+    libzip-dev \
+    unzip \
+    git \
+    nginx \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install intl \
+    && docker-php-ext-install pdo pdo_mysql
+
+# Composer'ı indirip kuruyoruz
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Proje dosyalarını konteynıra kopyalıyoruz
+COPY . /var/www/html
+
+# Çalışma dizinini ayarlıyoruz
+WORKDIR /var/www/html
+
+# Composer bağımlılıklarını yüklüyoruz
+RUN composer install
+
+# Nginx yapılandırması
+COPY ./docker/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Nginx ve PHP-FPM başlatma komutunu tanımlıyoruz
+CMD service nginx start && php-fpm
+
+EXPOSE 80
+
